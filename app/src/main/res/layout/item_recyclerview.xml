@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cv_item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    card_view:cardCornerRadius="4dp"
+    card_view:cardBackgroundColor="#ffffff"
+    card_view:contentPadding="5dp">
+
+<LinearLayout
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/title_textView"
+        style="@style/article_info"
+        android:textSize="20sp"
+        android:text="@string/article_title"/>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#a9a9b1"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"/>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <com.facebook.drawee.view.SimpleDraweeView
+            android:id="@+id/imageView"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            fresco:placeholderImage="@mipmap/ic_launcher"
+            fresco:roundAsCircle="true"/>
+
+        <TextView
+            android:id="@+id/author_textView"
+            style="@style/article_info"
+            android:layout_toRightOf="@id/imageView"
+            android:layout_toEndOf="@id/imageView"
+            android:layout_marginLeft="3dp"
+            android:text="@string/article_author"/>
+
+        <TextView
+            android:id="@+id/readCount_textView"
+            style="@style/article_info"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:text="@string/article_readCount"/>
+
+        <TextView
+            android:id="@+id/read_divide"
+            style="@style/article_info"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:layout_toLeftOf="@id/readCount_textView"
+            android:text="@string/article_divide"/>
+
+        <TextView
+            android:id="@+id/readTime_textView"
+            style="@style/article_info"
+            android:layout_toLeftOf="@id/read_divide"
+            android:text="@string/article_readTime"/>
+    </RelativeLayout>
+</LinearLayout>
+</android.support.v7.widget.CardView>
