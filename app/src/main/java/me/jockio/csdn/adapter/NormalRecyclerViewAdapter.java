@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import me.jockio.csdn.R;
@@ -28,10 +29,10 @@ import me.jockio.csdn.utils.MyApplication;
 
 public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<NormalRecyclerViewAdapter.NormalTextViewHolder> {
 
-    private static List<Article> articleList = null;
+    private List<Article> articleList = null;
 
-    public NormalRecyclerViewAdapter(List<Article> articleList){
-        this.articleList = articleList;
+    public NormalRecyclerViewAdapter(){
+        this.articleList = new ArrayList<>();
     }
 
     @Override
@@ -79,7 +80,7 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<NormalRecycl
         }
     }
 
-    public static class MyOnClickListener implements View.OnClickListener{
+    public class MyOnClickListener implements View.OnClickListener{
         private int position;
 
         public MyOnClickListener(int position){
@@ -112,5 +113,19 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<NormalRecycl
                     break;
             }
         }
+    }
+
+    //下拉刷新 添加数据
+    public void addItem(List<Article> articleList) {
+        this.articleList.clear();
+        //this.articleList.removeAll(this.articleList);
+        this.articleList.addAll(articleList);
+        notifyDataSetChanged();
+    }
+
+    //上拉加载 添加数据
+    public void addMoreItem(List<Article> articleList) {
+        this.articleList.addAll(articleList);
+        notifyDataSetChanged();
     }
 }
