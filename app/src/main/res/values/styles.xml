@@ -25,4 +25,12 @@
         <item name="android:textSize">17sp</item>
         <item name="android:textColor">#282525</item>
     </style>
+
+    <style name="SmallGreyTextView">
+        <item name="android:textColor">@color/grey</item>
+        <item name="android:textSize">@dimen/textSize_small</item>
+    </style>
+
+
+
 </resources>

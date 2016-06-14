@@ -26,7 +26,7 @@ import okhttp3.Response;
 public class Tools {
     private static List<Article> list = null;
 
-    public static void getInfo(final String url){
+    public static void getInfo(final String url, final int flag){
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -64,7 +64,7 @@ public class Tools {
                                     Log.v("json", article.toString());
                                 }
                                 Message msg = Message.obtain();
-                                msg.what = 1;
+                                msg.what = flag;
                                 msg.obj = list;
                                 MainActivity.handler.sendMessage(msg);
                             } catch (JSONException e) {

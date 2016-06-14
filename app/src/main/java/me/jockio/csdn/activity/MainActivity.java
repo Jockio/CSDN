@@ -16,6 +16,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Layout;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -38,6 +39,8 @@ import me.jockio.csdn.utils.MyApplication;
 import me.jockio.csdn.utils.Tools;
 import me.jockio.csdn.view.DividerItemDecoration;
 
+import static java.lang.Integer.parseInt;
+
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -49,8 +52,10 @@ public class MainActivity extends AppCompatActivity
     private static LinearLayout headerLayout;
     private static NormalRecyclerViewAdapter adapter;
 
+    private static boolean isLoading;
     private static String currentUrl;
     private final static int SUCCEED = 1;
+    private final static int LOAD_MORE = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +63,7 @@ public class MainActivity extends AppCompatActivity
         Fresco.initialize(this);
         setContentView(R.layout.activity_main);
 
+        currentUrl = getResources().getString(R.string.base_url) + "/home/getlist?page=1";
         initView();
     }
 
@@ -91,7 +97,8 @@ public class MainActivity extends AppCompatActivity
         headerLayout = (LinearLayout) findViewById(R.id.header_layout);
 
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        final LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
         //设置Item增加、移除动画
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         //添加分割线
@@ -99,6 +106,49 @@ public class MainActivity extends AppCompatActivity
                 MyApplication.getContext(), DividerItemDecoration.VERTICAL_LIST));
         adapter = new NormalRecyclerViewAdapter();
         recyclerView.setAdapter(adapter);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                Log.d("test", "StateChanged = " + newState);
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                Log.d("test", "onScrolled");
+
+                int lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition();
+                if (lastVisibleItemPosition + 1 == adapter.getItemCount()) {
+                    Log.d("test", "loading executed");
+
+                    boolean isRefreshing = swipeRefreshLayout.isRefreshing();
+                    if (isRefreshing) {
+                        adapter.notifyItemRemoved(adapter.getItemCount());
+                        return;
+                    }
+                    if (!isLoading) {
+                        isLoading = true;
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                //上拉加载更多数据
+                                String[] array = currentUrl.split("=");
+                                int number = Integer.parseInt(array[array.length - 1]) + 1;
+                                currentUrl = "";
+                                for(int i = 0; i < array.length - 1; i++){
+                                    currentUrl = currentUrl + array[i] + "=";
+                                }
+                                currentUrl += number;
+                                Log.v("URL", currentUrl);
+                                Tools.getInfo(currentUrl, LOAD_MORE);
+                            }
+                        }, 1000);
+                    }
+                }
+            }
+        });
+
 
         swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeRefreshLayout);
         //设置刷新时动画的颜色，可以设置4个
@@ -110,7 +160,6 @@ public class MainActivity extends AppCompatActivity
                 .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24, getResources()
                         .getDisplayMetrics()));
 
-        currentUrl = getResources().getString(R.string.base_url) + "/home/getlist?page=1";
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -118,7 +167,7 @@ public class MainActivity extends AppCompatActivity
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        Tools.getInfo(currentUrl);
+                        Tools.getInfo(currentUrl, SUCCEED);
                     }
                 }, 1000);
             }
@@ -168,6 +217,20 @@ public class MainActivity extends AppCompatActivity
                     headerLayout.setVisibility(View.GONE);
                     Log.v("MainActivity", "666666666666666666666");
                     //recyclerView.setAdapter(adapter);
+                    break;
+                case LOAD_MORE:
+                    articleList = (List<Article>) msg.obj;
+                    if(articleList.size() == 0){
+                        Toast.makeText(MyApplication.getContext(),
+                                "没有更多数据了",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    }
+                    adapter.addMoreItem(articleList);
+                    swipeRefreshLayout.setRefreshing(false);
+                    adapter.notifyItemRemoved(adapter.getItemCount());
+                    Log.d("test", "load more completed");
+                    isLoading = false;
                     break;
                 default:
                     break;
@@ -234,7 +297,7 @@ public class MainActivity extends AppCompatActivity
             toolbar.setTitle("互联网");
         }
 
-        Tools.getInfo(currentUrl);
+        Tools.getInfo(currentUrl, SUCCEED);
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
