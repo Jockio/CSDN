@@ -11,12 +11,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.jockio.csdn.R;
 import me.jockio.csdn.activity.MainActivity;
 import me.jockio.csdn.model.Article;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -65,6 +68,46 @@ public class Tools {
                                 }
                                 Message msg = Message.obtain();
                                 msg.what = flag;
+                                msg.obj = list;
+                                MainActivity.handler.sendMessage(msg);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    public static void getSearchResult(final String path){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder()
+                        .url(path)
+                        .build();
+
+                client.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        if(response.isSuccessful()) {
+                            JSONArray array = null;
+                            try {
+                                JSONObject obj = new JSONObject(response.body().string());
+                                array = obj.getJSONArray("hits");
+                                for(int i = 0; i < array.length(); i++){
+                                    JSONObject object = array.getJSONObject(i);
+                                    Log.v("HELLO", object.toString());
+                                }
+
+                                Message msg = Message.obtain();
                                 msg.obj = list;
                                 MainActivity.handler.sendMessage(msg);
                             } catch (JSONException e) {
