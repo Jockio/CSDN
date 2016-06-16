@@ -42,7 +42,7 @@ import static java.lang.Integer.parseInt;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private MaterialSearchView searchView;
+    private static MaterialSearchView searchView;
     private static RecyclerView recyclerView;
     private static SwipeRefreshLayout swipeRefreshLayout;
     private Toolbar toolbar;
@@ -51,9 +51,14 @@ public class MainActivity extends AppCompatActivity
     private static NormalRecyclerViewAdapter adapter;
 
     private static boolean isLoading;
+    private static boolean isSearchMode = false;
+    private static int currentSearchPage;
+    private static String currentSearchWord;
     private static String currentUrl;
     private final static int SUCCEED = 1;
     private final static int LOAD_MORE = 2;
+    private final static int SEARCH = 3;
+    private final static int SEARCH_MORE = 4;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,12 +81,13 @@ public class MainActivity extends AppCompatActivity
         searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                //Do some magic
+                isSearchMode = true;
+                currentSearchWord = query;
+                currentSearchPage = 1;
                 String url = MyApplication.getContext().getResources().getString(R.string.base_url)
                         + "/search/searchdata?r=" + String.valueOf(Math.random());
-                url = url + "&keyword=" + query + "&page=1";
                 Log.v("URL", url);
-                Tools.getSearchResult(url);
+                Tools.getSearchResult(url, query, currentSearchPage, SEARCH);
                 Toast.makeText(MyApplication.getContext(), query, Toast.LENGTH_SHORT).show();
                 return true;
             }
@@ -110,8 +116,9 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                recyclerView.smoothScrollToPosition(0);
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
             }
         });
 
@@ -167,15 +174,25 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void run() {
                                 //上拉加载更多数据
-                                String[] array = currentUrl.split("=");
-                                int number = Integer.parseInt(array[array.length - 1]) + 1;
-                                currentUrl = "";
-                                for(int i = 0; i < array.length - 1; i++){
-                                    currentUrl = currentUrl + array[i] + "=";
-                                }
-                                currentUrl += number;
-                                Log.v("URL", currentUrl);
-                                Tools.getInfo(currentUrl, LOAD_MORE);
+//                                if(isSearchMode){
+//                                    currentSearchPage++;
+//                                    String url = MyApplication.getContext().getResources().getString(R.string.base_url)
+//                                            + "/search/searchdata?r=" + String.valueOf(Math.random());
+//                                    Tools.getSearchResult(url, currentSearchWord, currentSearchPage, SEARCH_MORE);
+//                                    Toast.makeText(MyApplication.getContext(),
+//                                            currentSearchPage + "页已经在加载",
+//                                            Toast.LENGTH_SHORT).show();
+//                                }else{
+                                    String[] array = currentUrl.split("=");
+                                    int number = Integer.parseInt(array[array.length - 1]) + 1;
+                                    currentUrl = "";
+                                    for(int i = 0; i < array.length - 1; i++){
+                                        currentUrl = currentUrl + array[i] + "=";
+                                    }
+                                    currentUrl += number;
+                                    Log.v("URL", currentUrl);
+                                    Tools.getInfo(currentUrl, LOAD_MORE);
+                                //}
                             }
                         }, 1000);
                     }
@@ -201,7 +218,15 @@ public class MainActivity extends AppCompatActivity
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        Tools.getInfo(currentUrl, SUCCEED);
+                        //下拉刷新
+                        if(isSearchMode){
+                            currentSearchPage = 1;
+                            String url = MyApplication.getContext().getResources().getString(R.string.base_url)
+                                    + "/search/searchdata?r=" + String.valueOf(Math.random());
+                            Tools.getSearchResult(url, currentSearchWord, currentSearchPage, SEARCH);
+                        }else {
+                            Tools.getInfo(currentUrl, SUCCEED);
+                        }
                     }
                 }, 1000);
             }
@@ -254,6 +279,7 @@ public class MainActivity extends AppCompatActivity
                     break;
                 case LOAD_MORE:
                     articleList = (List<Article>) msg.obj;
+                    swipeRefreshLayout.setRefreshing(false);
                     if(articleList.size() == 0){
                         Toast.makeText(MyApplication.getContext(),
                                 "没有更多数据了",
@@ -261,10 +287,25 @@ public class MainActivity extends AppCompatActivity
                         break;
                     }
                     adapter.addMoreItem(articleList);
-                    swipeRefreshLayout.setRefreshing(false);
                     adapter.notifyItemRemoved(adapter.getItemCount());
                     Log.d("test", "load more completed");
                     isLoading = false;
+                    break;
+                case SEARCH:
+                    swipeRefreshLayout.setRefreshing(false);
+                    articleList = (List<Article>) msg.obj;
+                    adapter.addItem(articleList);
+                    headerLayout.setVisibility(View.GONE);
+                    searchView.closeSearch();
+                    Toast.makeText(MyApplication.getContext(),
+                            "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();
+                    break;
+                case SEARCH_MORE:
+                    swipeRefreshLayout.setRefreshing(false);
+                    articleList = (List<Article>) msg.obj;
+                    adapter.addMoreItem(articleList);
+                    Toast.makeText(MyApplication.getContext(),
+                            "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     break;
@@ -337,6 +378,8 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_send) {
             toolbar.setTitle("互联网");
         }
+
+        isSearchMode = false;
 
         Tools.getInfo(currentUrl, SUCCEED);
 

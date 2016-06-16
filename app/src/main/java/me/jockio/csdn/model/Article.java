@@ -25,12 +25,12 @@ public class Article {
      * title : android 开发
      */
 
-    private int articleid;
+    private String articleid;
     private String username;
     private String posttime;
     private String ago;
     private int viewcount;
-    private int channelId;
+    private String channelId;
     private String channel;
     private int pageindex;
     private int pagecount;
@@ -55,11 +55,11 @@ public class Article {
         return str;
     }
 
-    public int getArticleid() {
+    public String getArticleid() {
         return articleid;
     }
 
-    public void setArticleid(int articleid) {
+    public void setArticleid(String articleid) {
         this.articleid = articleid;
     }
 
@@ -95,11 +95,11 @@ public class Article {
         this.viewcount = viewcount;
     }
 
-    public int getChannelId() {
+    public String getChannelId() {
         return channelId;
     }
 
-    public void setChannelId(int channelId) {
+    public void setChannelId(String channelId) {
         this.channelId = channelId;
     }
 
