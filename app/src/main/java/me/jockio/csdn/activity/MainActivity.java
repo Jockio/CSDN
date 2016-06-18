@@ -281,6 +281,7 @@ public class MainActivity extends AppCompatActivity
                     articleList = (List<Article>) msg.obj;
                     swipeRefreshLayout.setRefreshing(false);
                     if(articleList.size() == 0){
+                        adapter.notifyItemRemoved(adapter.getItemCount());
                         Toast.makeText(MyApplication.getContext(),
                                 "没有更多数据了",
                                 Toast.LENGTH_SHORT).show();
