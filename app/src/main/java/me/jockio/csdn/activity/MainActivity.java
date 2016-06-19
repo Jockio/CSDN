@@ -75,6 +75,8 @@ public class MainActivity extends AppCompatActivity
         toolbar.setTitle("CSDN博客");
         searchView = (MaterialSearchView) findViewById(R.id.search_view);
         searchView.setSuggestions(getResources().getStringArray(R.array.query_suggestions));
+        //设置点击搜索建议中 item 时,开始搜索
+        searchView.setSubmitOnClick(true);
         searchView.setVoiceSearch(false);
         searchView.setCursorDrawable(R.drawable.custom_cursor);
         searchView.setEllipsize(true);
