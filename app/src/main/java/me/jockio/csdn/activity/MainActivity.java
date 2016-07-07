@@ -145,8 +145,8 @@ public class MainActivity extends AppCompatActivity
         //设置Item增加、移除动画
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         //添加分割线
-        recyclerView.addItemDecoration(new DividerItemDecoration(
-                MyApplication.getContext(), DividerItemDecoration.VERTICAL_LIST));
+//        recyclerView.addItemDecoration(new DividerItemDecoration(
+//                MyApplication.getContext(), DividerItemDecoration.VERTICAL_LIST));
         adapter = new NormalRecyclerViewAdapter();
         recyclerView.setAdapter(adapter);
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -346,11 +346,6 @@ public class MainActivity extends AppCompatActivity
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -363,25 +358,30 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_camera) {
             // Handle the camera action
             toolbar.setTitle("主页");
-            recyclerView.smoothScrollToPosition(0);
             currentUrl = getResources().getString(R.string.base_url) + "/home/getlist?page=1";
-
         } else if (id == R.id.nav_gallery) {
             toolbar.setTitle("移动开发");
-            recyclerView.smoothScrollToPosition(0);
             currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=mobile&Type=new&page=1";
         } else if (id == R.id.nav_slideshow) {
             toolbar.setTitle("Web前端");
-            recyclerView.smoothScrollToPosition(0);
             currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=web&Type=new&page=1";
         } else if (id == R.id.nav_manage) {
             toolbar.setTitle("架构设计");
+            currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=enterprise&Type=new&page=1";
         } else if (id == R.id.nav_share) {
             toolbar.setTitle("编程语言");
+            currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=code&Type=new&page=1";
         } else if (id == R.id.nav_send) {
             toolbar.setTitle("互联网");
+            currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=www&Type=new&page=1";
         }
 
+        //数据库
+        ///column/getlist?Channel=database&Type=new&page=1
+        //系统运维
+        ///column/getlist?Channel=system&Type=new&page=1
+
+        recyclerView.smoothScrollToPosition(0);
         isSearchMode = false;
 
         Tools.getInfo(currentUrl, SUCCEED);
