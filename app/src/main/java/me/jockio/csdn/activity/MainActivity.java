@@ -1,5 +1,6 @@
 package me.jockio.csdn.activity;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -15,6 +16,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.transition.Visibility;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -37,6 +39,7 @@ import me.jockio.csdn.utils.Tools;
 import me.jockio.csdn.view.DividerItemDecoration;
 
 import static java.lang.Integer.parseInt;
+import static me.jockio.csdn.R.id.fab;
 
 
 public class MainActivity extends AppCompatActivity
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity
     private DraweeView draweeView;
     private static LinearLayout headerLayout;
     private static NormalRecyclerViewAdapter adapter;
+    private FloatingActionButton fab;
 
     private static boolean isLoading;
     private static boolean isSearchMode = false;
@@ -83,6 +87,7 @@ public class MainActivity extends AppCompatActivity
         searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                toolbar.setTitle("搜索" + "\"" + query + "\"" + "的结果:");
                 isSearchMode = true;
                 currentSearchWord = query;
                 currentSearchPage = 1;
@@ -114,7 +119,8 @@ public class MainActivity extends AppCompatActivity
         });
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setRippleColor(Color.parseColor("#00000000"));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -160,6 +166,13 @@ public class MainActivity extends AppCompatActivity
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 Log.d("test", "onScrolled");
+
+                int first = layoutManager.findFirstVisibleItemPosition();
+                if(first == 0){
+                    fab.setVisibility(View.GONE);
+                }else{
+                    fab.setVisibility(View.VISIBLE);
+                }
 
                 int lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition();
                 if (lastVisibleItemPosition + 1 == adapter.getItemCount()) {
@@ -374,6 +387,12 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_send) {
             toolbar.setTitle("互联网");
             currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=www&Type=new&page=1";
+        } else if (id == R.id.nav_database) {
+            toolbar.setTitle("数据库");
+            currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=database&Type=new&page=1";
+        } else if (id == R.id.nav_system) {
+            toolbar.setTitle("系统运维");
+            currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=system&Type=new&page=1";
         }
 
         //数据库
