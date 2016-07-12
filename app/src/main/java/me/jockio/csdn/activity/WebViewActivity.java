@@ -15,7 +15,10 @@ import me.jockio.csdn.R;
 
 public class WebViewActivity extends AppCompatActivity {
     private WebView webView;
-
+    private SwipeRefreshLayout swipeRefreshLayout;
+    
+    private String currentUrl = "";
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,12 +27,29 @@ public class WebViewActivity extends AppCompatActivity {
         initView();
 
         Intent intent = getIntent();
-        webView.loadUrl(intent.getStringExtra("url"));
+        currentUrl = intent.getStringExtra("url");
+        webView.loadUrl(currentUrl);
     }
 
     private void initView() {
         webView = (WebView) findViewById(R.id.webView);
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient(){
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                //屏蔽超链接
+                return true;
+            }
+        });
+
+        webView.setWebChromeClient(new WebChromeClient(){
+            @Override
+            public void onProgressChanged(WebView view, int newProgress) {
+                if (newProgress == 100) {
+                    // 加载完成
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+            }
+        });
 
         WebSettings settings = webView.getSettings();
         //设置 缓存模式
@@ -48,5 +68,30 @@ public class WebViewActivity extends AppCompatActivity {
         settings.setJavaScriptCanOpenWindowsAutomatically(true); //支持通过JS打开新窗口
         settings.setLoadWithOverviewMode(true); // 缩放至屏幕的大小
         settings.setLoadsImagesAutomatically(true);  //支持自动加载图片
+        
+        swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipeRefreshLayout);
+        //设置刷新时动画的颜色，可以设置4个
+        swipeRefreshLayout.setProgressBackgroundColorSchemeResource(android.R.color.white);
+        swipeRefreshLayout.setColorSchemeResources(android.R.color.holo_blue_light,
+                android.R.color.holo_red_light, android.R.color.holo_orange_light,
+                android.R.color.holo_green_light);
+        swipeRefreshLayout.setProgressViewOffset(false, 0, (int) TypedValue
+                .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24, getResources()
+                        .getDisplayMetrics()));
+        swipeRefreshLayout.setRefreshing(true);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                Log.d("MainActivity", "swipeRefreshLayout onRefresh...");
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        //下拉刷新
+                        webView.loadUrl(currentUrl);
+                    }
+                }, 1000);
+            }
+        });
     }
 }
