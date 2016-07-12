@@ -1,5 +1,7 @@
 package me.jockio.csdn.model;
 
+import java.io.Serializable;
+
 /**
  * Created by jockio on 16/6/11.
  */
@@ -10,7 +12,7 @@ package me.jockio.csdn.model;
 "channelId":16,"channel":"编程语言","pageindex":2,"pagecount":35,
 "photo":"http://avatar.csdn.net/5/5/7/1_itismelzp.jpg"}
 */
-public class Article {
+public class Article implements Serializable{
     /**
      * articleid : 51628994
      * username : itismelzp

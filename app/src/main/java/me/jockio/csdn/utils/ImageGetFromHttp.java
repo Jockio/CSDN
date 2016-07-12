@@ -1,4 +1,4 @@
-package com.android.zhangsj_fnst.pictureusage.utils;
+package me.jockio.csdn.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

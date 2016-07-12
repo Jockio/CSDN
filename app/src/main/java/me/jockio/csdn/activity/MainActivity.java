@@ -2,11 +2,11 @@ package me.jockio.csdn.activity;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -16,19 +16,22 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.transition.Visibility;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.facebook.drawee.backends.pipeline.Fresco;
-import com.facebook.drawee.view.DraweeView;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import me.jockio.csdn.R;
@@ -36,11 +39,7 @@ import me.jockio.csdn.adapter.NormalRecyclerViewAdapter;
 import me.jockio.csdn.model.Article;
 import me.jockio.csdn.utils.MyApplication;
 import me.jockio.csdn.utils.Tools;
-import me.jockio.csdn.view.DividerItemDecoration;
-
-import static java.lang.Integer.parseInt;
-import static me.jockio.csdn.R.id.fab;
-
+import me.jockio.csdn.view.CircleImageView;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -49,13 +48,14 @@ public class MainActivity extends AppCompatActivity
     private static RecyclerView recyclerView;
     private static SwipeRefreshLayout swipeRefreshLayout;
     private Toolbar toolbar;
-    private DraweeView draweeView;
-    private static LinearLayout headerLayout;
+    private CircleImageView circleImageView;
     private static NormalRecyclerViewAdapter adapter;
     private FloatingActionButton fab;
 
+    private static final String CSDN_CACHE = "CSDN_Cache";
     private static boolean isLoading;
     private static boolean isSearchMode = false;
+    private static boolean isFirstOpen = true;
     private static int currentSearchPage;
     private static String currentSearchWord;
     private static String currentUrl;
@@ -67,7 +67,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fresco.initialize(this);
         setContentView(R.layout.activity_main);
 
         currentUrl = getResources().getString(R.string.base_url) + "/home/getlist?page=1";
@@ -140,10 +139,9 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         View headerView = navigationView.getHeaderView(0);
-        draweeView = (DraweeView) headerView.findViewById(R.id.nav_imageView);
-        draweeView.setOnClickListener(new MyOnClickListener());
+        circleImageView = (CircleImageView) headerView.findViewById(R.id.nav_imageView);
+        circleImageView.setOnClickListener(new MyOnClickListener());
 
-        headerLayout = (LinearLayout) findViewById(R.id.header_layout);
 
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         final LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -199,12 +197,12 @@ public class MainActivity extends AppCompatActivity
 //                                            Toast.LENGTH_SHORT).show();
 //                                }else{
                                     String[] array = currentUrl.split("=");
-                                    int number = Integer.parseInt(array[array.length - 1]) + 1;
+                                    int currentNumber = Integer.parseInt(array[array.length - 1]) + 1;
                                     currentUrl = "";
                                     for(int i = 0; i < array.length - 1; i++){
                                         currentUrl = currentUrl + array[i] + "=";
                                     }
-                                    currentUrl += number;
+                                    currentUrl += currentNumber;
                                     Log.v("URL", currentUrl);
                                     Tools.getInfo(currentUrl, LOAD_MORE);
                                 //}
@@ -246,6 +244,105 @@ public class MainActivity extends AppCompatActivity
                 }, 1000);
             }
         });
+
+        List<Article> list = new ArrayList<>();
+        if((list = readFromFile(list)) != null){
+            Toast.makeText(MyApplication.getContext(), "size = " + list.size(), Toast.LENGTH_SHORT).show();
+            adapter.addItem(list);
+        }else{
+            swipeRefreshLayout.setRefreshing(true);
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Tools.getInfo(currentUrl, SUCCEED);
+                }
+            }, 1000);
+        }
+    }
+
+    /**
+     * 刚打开APP时，从文件中读取数据显示在屏幕上
+     *
+     * @return
+     */
+    private List<Article> readFromFile(List<Article> list) {
+        File file = new File(getDirectory(), "csdn.cache");
+        ObjectInputStream ois = null;
+        try {
+            if (!file.exists()) return null;
+            ois = new ObjectInputStream(new FileInputStream(file));
+            list = (List<Article>)ois.readObject();
+            return list;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }finally {
+            if(ois != null){
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 将数据写入文件
+     *
+     * @return
+     */
+    private static boolean writeToFile(List<Article> list) {
+        File file = new File(getDirectory(), "csdn.cache");
+        ObjectOutputStream oos = null;
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            oos = new ObjectOutputStream(new FileOutputStream(file));
+            if(list != null){
+                oos.writeObject(list);
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally{
+            if(oos != null){
+                try {
+                    oos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 获得缓存目录
+     **/
+    private static String getDirectory() {
+        String dir = getSDPath() + "/" + CSDN_CACHE;
+        return dir;
+    }
+
+    /**
+     * 取SD卡路径
+     **/
+    private static String getSDPath() {
+        File sdDir = null;
+        boolean sdCardExist = Environment.getExternalStorageState().equals(
+                android.os.Environment.MEDIA_MOUNTED);  //判断sd卡是否存在
+        if (sdCardExist) {
+            sdDir = Environment.getExternalStorageDirectory();  //获取根目录
+        }
+        if (sdDir != null) {
+            return sdDir.toString();
+        } else {
+            return "";
+        }
     }
 
     public class MyOnClickListener implements View.OnClickListener {
@@ -286,10 +383,12 @@ public class MainActivity extends AppCompatActivity
                     List<Article> articleList = (List<Article>) msg.obj;
                     adapter.addItem(articleList);
                     swipeRefreshLayout.setRefreshing(false);
+                    if(isFirstOpen){
+                        isFirstOpen = false;
+                        writeToFile(articleList);
+                    }
                     Toast.makeText(MyApplication.getContext(),
                             "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();
-                    headerLayout.setVisibility(View.GONE);
-                    Log.v("MainActivity", "666666666666666666666");
                     //recyclerView.setAdapter(adapter);
                     break;
                 case LOAD_MORE:
@@ -311,7 +410,6 @@ public class MainActivity extends AppCompatActivity
                     swipeRefreshLayout.setRefreshing(false);
                     articleList = (List<Article>) msg.obj;
                     adapter.addItem(articleList);
-                    headerLayout.setVisibility(View.GONE);
                     searchView.closeSearch();
                     Toast.makeText(MyApplication.getContext(),
                             "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();

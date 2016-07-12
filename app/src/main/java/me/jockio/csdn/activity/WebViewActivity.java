@@ -2,7 +2,12 @@ package me.jockio.csdn.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.util.TypedValue;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -69,8 +74,8 @@ public class WebViewActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true); // 缩放至屏幕的大小
         settings.setLoadsImagesAutomatically(true);  //支持自动加载图片
         
-        swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipeRefreshLayout);
-        swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeRefreshLayout);
         //设置刷新时动画的颜色，可以设置4个
         swipeRefreshLayout.setProgressBackgroundColorSchemeResource(android.R.color.white);
         swipeRefreshLayout.setColorSchemeResources(android.R.color.holo_blue_light,

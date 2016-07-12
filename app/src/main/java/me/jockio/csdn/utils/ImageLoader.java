@@ -1,4 +1,4 @@
-package com.android.zhangsj_fnst.pictureusage.utils;
+package me.jockio.csdn.utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 
 /**
  * Created by zhangsj-fnst on 2016/7/5/0005.

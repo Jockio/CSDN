@@ -1,14 +1,11 @@
 package me.jockio.csdn.adapter;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +13,9 @@ import java.util.List;
 import me.jockio.csdn.R;
 import me.jockio.csdn.activity.WebViewActivity;
 import me.jockio.csdn.model.Article;
+import me.jockio.csdn.utils.ImageLoader;
 import me.jockio.csdn.utils.MyApplication;
-
+import me.jockio.csdn.view.CircleImageView;
 
 /**
  * Created by jockio on 16/6/11.
@@ -28,9 +26,11 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
     private final int TYPE_ITEM = 0;
     private final int TYPE_FOOTER = 1;
     private List<Article> articleList = null;
+    private ImageLoader mImageLoader;
 
     public NormalRecyclerViewAdapter() {
         this.articleList = new ArrayList<>();
+        mImageLoader = ImageLoader.getInstance(MyApplication.getContext());
     }
 
     @Override
@@ -58,11 +58,10 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
             ((NormalTextViewHolder) holder).readTimeTextView.setText(article.getAgo());
             ((NormalTextViewHolder) holder).readCountTextView.setText(article.getViewcount() + " 阅读");
 
-            Uri uri = Uri.parse(article.getPhoto());
-            ((NormalTextViewHolder) holder).draweeView.setImageURI(uri);
-
+            //开启线程下载图片
+            mImageLoader.addTask(article.getPhoto(), ((NormalTextViewHolder)holder).circleImageView);
             ((NormalTextViewHolder) holder).titleTextView.setOnClickListener(new MyOnClickListener(position));
-            ((NormalTextViewHolder) holder).draweeView.setOnClickListener(new MyOnClickListener(position));
+            ((NormalTextViewHolder) holder).circleImageView.setOnClickListener(new MyOnClickListener(position));
         }
     }
 
@@ -85,7 +84,7 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
         TextView authorTextView;
         TextView readTimeTextView;
         TextView readCountTextView;
-        SimpleDraweeView draweeView;
+        CircleImageView circleImageView;
 
         public NormalTextViewHolder(View itemView) {
             super(itemView);
@@ -93,7 +92,7 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
             authorTextView = (TextView) itemView.findViewById(R.id.author_textView);
             readTimeTextView = (TextView) itemView.findViewById(R.id.readTime_textView);
             readCountTextView = (TextView) itemView.findViewById(R.id.readCount_textView);
-            draweeView = (SimpleDraweeView) itemView.findViewById(R.id.imageView);
+            circleImageView = (CircleImageView) itemView.findViewById(R.id.imageView);
         }
     }
 
