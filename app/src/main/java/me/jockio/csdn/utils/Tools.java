@@ -7,18 +7,29 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.TreeSet;
 
 import me.jockio.csdn.activity.MainActivity;
 import me.jockio.csdn.model.Article;
+import me.jockio.csdn.model.Suggestion;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
+import static android.R.attr.id;
 
 /**
  * Created by jockio on 16/6/11.
@@ -27,6 +38,11 @@ import okhttp3.Response;
 public class Tools {
     private static List<Article> list = null;
 
+    /**
+     * 根据url, 获取博客信息
+     * @param url
+     * @param flag
+     */
     public static void getInfo(final String url, final int flag){
         new Thread(new Runnable() {
             @Override
@@ -78,6 +94,13 @@ public class Tools {
         }).start();
     }
 
+    /**
+     * 根据搜索的关键词,从网络获取搜索结果
+     * @param path
+     * @param keyWord
+     * @param page
+     * @param flag
+     */
     public static void getSearchResult(final String path, final String keyWord, final int page, final int flag){
         new Thread(new Runnable() {
             @Override
@@ -192,5 +215,148 @@ public class Tools {
                 }
             }
         });
+    }
+
+    /**
+     * 获取存储在本地的搜索建议
+     * @return
+     */
+    public static String[] getSuggestions(){
+        File file = new File(MyApplication.getContext().getFilesDir(), "suggestion.sg");
+
+        BufferedReader br = null;
+        try {
+            if(!file.exists()) {
+                file.createNewFile();
+                return new String[0];
+            }
+            br = new BufferedReader(new FileReader(file));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<Suggestion> list = new ArrayList<>();
+        String line;
+        try {
+            while((line = br.readLine()) != null){
+                String[] strings = line.split(" ");
+                list.add(new Suggestion(strings[0], Integer.valueOf(strings[1])));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(null != br){
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        if(list.size() == 0) return new String[0];
+        quickSort(list, 0, list.size() - 1);
+
+        String[] suggestions = new String[list.size()];
+        for(int i = 0; i < list.size(); i++)
+            suggestions[i] = list.get(i).getKeyword();
+
+        return suggestions;
+    }
+
+    private static void quickSort(ArrayList<Suggestion> arrayList, int low, int high){
+        if(low >= high) return;
+
+        int left = low;
+        int right = high;
+        Suggestion suggestion = arrayList.get(low);
+
+        while(left < right){
+            while (left < right && arrayList.get(right).getTimes() <= suggestion.getTimes()) right--;
+            arrayList.set(left, arrayList.get(right));
+            while (left < right && arrayList.get(left).getTimes() >= suggestion.getTimes()) left++;
+            arrayList.set(right, arrayList.get(left));
+        }
+        arrayList.set(left, suggestion);
+        quickSort(arrayList, left + 1, high);
+        quickSort(arrayList, low, left - 1);
+    }
+
+    /**
+     * 向搜索建议中添加关键词
+     * @param keyword
+     * @return
+     */
+    public static boolean updateSuggestions(String keyword){
+        File file = new File(MyApplication.getContext().getFilesDir(), "suggestion.sg");
+
+        BufferedReader br = null;
+        try {
+            if(!file.exists()){
+                file.createNewFile();
+                return true;
+            }
+            br = new BufferedReader(new FileReader(file));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<Suggestion> list = new ArrayList<>();
+        String line;
+        try {
+            boolean flag = false;
+            while((line = br.readLine()) != null){
+                String[] strings = line.split(" ");
+                if(keyword.equals(strings[0])){
+                    list.add(new Suggestion(strings[0], Integer.valueOf(strings[1]) + 1));
+                    flag = true;
+                } else {
+                    list.add(new Suggestion(strings[0], Integer.valueOf(strings[1])));
+                }
+            }
+            if(!flag){
+                list.add(new Suggestion(keyword, 1));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(null != br){
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        BufferedWriter bw = null;
+        try {
+            bw = new BufferedWriter(new FileWriter(file));
+
+            for(int i = 0; i < list.size(); i++){
+                Suggestion suggestion = list.get(i);
+                if(i == list.size() - 1){
+                    bw.write(suggestion.getKeyword() + " " + suggestion.getTimes());
+                    continue;
+                }
+                bw.write(suggestion.getKeyword() + " " + suggestion.getTimes() + "\n");
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(bw != null){
+                try {
+                    bw.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
     }
 }

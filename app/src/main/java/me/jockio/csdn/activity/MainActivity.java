@@ -1,5 +1,6 @@
 package me.jockio.csdn.activity;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,6 +22,7 @@ import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
@@ -40,6 +42,8 @@ import me.jockio.csdn.model.Article;
 import me.jockio.csdn.utils.MyApplication;
 import me.jockio.csdn.utils.Tools;
 import me.jockio.csdn.view.CircleImageView;
+
+import static android.os.Build.VERSION_CODES.M;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -77,15 +81,25 @@ public class MainActivity extends AppCompatActivity
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("CSDN博客");
         searchView = (MaterialSearchView) findViewById(R.id.search_view);
-        searchView.setSuggestions(getResources().getStringArray(R.array.query_suggestions));
+//        searchView.setSuggestions(getResources().getStringArray(R.array.query_suggestions));
+        String[] strings = Tools.getSuggestions();
+        for(int i = 0; i < strings.length; i++)
+            Log.i("Test", strings[i]);
+        searchView.setSuggestions(strings);
         //设置点击搜索建议中 item 时,开始搜索
         searchView.setSubmitOnClick(true);
         searchView.setVoiceSearch(false);
         searchView.setCursorDrawable(R.drawable.custom_cursor);
-        searchView.setEllipsize(true);
+        searchView.setEllipsize(false);
         searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                query = query.trim();
+                if(query.equals("")){
+                    Toast.makeText(MyApplication.getContext(), "请输入要查询的关键字", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
                 toolbar.setTitle("搜索" + "\"" + query + "\"" + "的结果:");
                 isSearchMode = true;
                 currentSearchWord = query;
@@ -94,13 +108,16 @@ public class MainActivity extends AppCompatActivity
                         + "/search/searchdata?r=" + String.valueOf(Math.random());
                 Log.v("URL", url);
                 Tools.getSearchResult(url, query, currentSearchPage, SEARCH);
+                Tools.updateSuggestions(query);
+
+                searchView.setSuggestions(Tools.getSuggestions());
                 Toast.makeText(MyApplication.getContext(), query, Toast.LENGTH_SHORT).show();
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                //Do some magic
+                searchView.setSuggestions(Tools.getSuggestions());
                 return false;
             }
         });
@@ -113,7 +130,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onSearchViewClosed() {
-                //Do some magic
+
             }
         });
         setSupportActionBar(toolbar);
@@ -324,8 +341,12 @@ public class MainActivity extends AppCompatActivity
      * 获得缓存目录
      **/
     private static String getDirectory() {
-        String dir = getSDPath() + "/" + CSDN_CACHE;
-        return dir;
+        String path = getSDPath() + "/" + CSDN_CACHE;
+        File file = new File(path);
+        if(!file.exists()){
+            file.mkdir();
+        }
+        return path;
     }
 
     /**
