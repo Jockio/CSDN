@@ -1,9 +1,7 @@
 package me.jockio.csdn.activity;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
@@ -22,7 +20,6 @@ import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
@@ -35,6 +32,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import me.jockio.csdn.R;
 import me.jockio.csdn.adapter.NormalRecyclerViewAdapter;
@@ -43,7 +44,7 @@ import me.jockio.csdn.utils.MyApplication;
 import me.jockio.csdn.utils.Tools;
 import me.jockio.csdn.view.CircleImageView;
 
-import static android.os.Build.VERSION_CODES.M;
+import static me.jockio.csdn.utils.Tools.getDirectory;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -51,15 +52,14 @@ public class MainActivity extends AppCompatActivity
     private static MaterialSearchView searchView;
     private static RecyclerView recyclerView;
     private static SwipeRefreshLayout swipeRefreshLayout;
-    private Toolbar toolbar;
+    private static Toolbar toolbar;
     private CircleImageView circleImageView;
     private static NormalRecyclerViewAdapter adapter;
     private FloatingActionButton fab;
 
-    private static final String CSDN_CACHE = "CSDN_Cache";
+
     private static boolean isLoading;
     private static boolean isSearchMode = false;
-    private static boolean isFirstOpen = true;
     private static int currentSearchPage;
     private static String currentSearchWord;
     private static String currentUrl;
@@ -81,58 +81,9 @@ public class MainActivity extends AppCompatActivity
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("CSDN博客");
         searchView = (MaterialSearchView) findViewById(R.id.search_view);
+        loadSearchView();
 //        searchView.setSuggestions(getResources().getStringArray(R.array.query_suggestions));
-        String[] strings = Tools.getSuggestions();
-        for(int i = 0; i < strings.length; i++)
-            Log.i("Test", strings[i]);
-        searchView.setSuggestions(strings);
-        //设置点击搜索建议中 item 时,开始搜索
-        searchView.setSubmitOnClick(true);
-        searchView.setVoiceSearch(false);
-        searchView.setCursorDrawable(R.drawable.custom_cursor);
-        searchView.setEllipsize(false);
-        searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                query = query.trim();
-                if(query.equals("")){
-                    Toast.makeText(MyApplication.getContext(), "请输入要查询的关键字", Toast.LENGTH_SHORT).show();
-                    return true;
-                }
 
-                toolbar.setTitle("搜索" + "\"" + query + "\"" + "的结果:");
-                isSearchMode = true;
-                currentSearchWord = query;
-                currentSearchPage = 1;
-                String url = MyApplication.getContext().getResources().getString(R.string.base_url)
-                        + "/search/searchdata?r=" + String.valueOf(Math.random());
-                Log.v("URL", url);
-                Tools.getSearchResult(url, query, currentSearchPage, SEARCH);
-                Tools.updateSuggestions(query);
-
-                searchView.setSuggestions(Tools.getSuggestions());
-                Toast.makeText(MyApplication.getContext(), query, Toast.LENGTH_SHORT).show();
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                searchView.setSuggestions(Tools.getSuggestions());
-                return false;
-            }
-        });
-
-        searchView.setOnSearchViewListener(new MaterialSearchView.SearchViewListener() {
-            @Override
-            public void onSearchViewShown() {
-                //Do some magic
-            }
-
-            @Override
-            public void onSearchViewClosed() {
-
-            }
-        });
         setSupportActionBar(toolbar);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -141,8 +92,6 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 recyclerView.smoothScrollToPosition(0);
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
             }
         });
 
@@ -164,7 +113,7 @@ public class MainActivity extends AppCompatActivity
         final LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         //设置Item增加、移除动画
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
+//        recyclerView.setItemAnimator(new DefaultItemAnimator());
         //添加分割线
 //        recyclerView.addItemDecoration(new DividerItemDecoration(
 //                MyApplication.getContext(), DividerItemDecoration.VERTICAL_LIST));
@@ -264,7 +213,6 @@ public class MainActivity extends AppCompatActivity
 
         List<Article> list = new ArrayList<>();
         if((list = readFromFile(list)) != null){
-            Toast.makeText(MyApplication.getContext(), "size = " + list.size(), Toast.LENGTH_SHORT).show();
             adapter.addItem(list);
         }else{
             swipeRefreshLayout.setRefreshing(true);
@@ -275,6 +223,73 @@ public class MainActivity extends AppCompatActivity
                 }
             }, 1000);
         }
+    }
+
+    /**
+     * 异步加载搜索组件
+     */
+    private void loadSearchView(){
+        ScheduledExecutorService service = Executors.newScheduledThreadPool(3);
+        service.schedule(new Runnable() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String[] strings = Tools.getSuggestions();
+                        for(int i = 0; i < strings.length; i++)
+                            Log.i("Test", strings[i]);
+                        searchView.setSuggestions(strings);
+                        //设置点击搜索建议中 item 时,开始搜索
+                        searchView.setSubmitOnClick(true);
+                        searchView.setVoiceSearch(false);
+                        searchView.setCursorDrawable(R.drawable.custom_cursor);
+                        searchView.setEllipsize(false);
+                        searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
+                            @Override
+                            public boolean onQueryTextSubmit(String query) {
+                                query = query.trim();
+                                if(query.equals("")){
+                                    Toast.makeText(MyApplication.getContext(), "请输入要查询的关键字", Toast.LENGTH_SHORT).show();
+                                    return true;
+                                }
+
+                                toolbar.setTitle("搜索" + "\"" + query + "\"" + "的结果:");
+                                isSearchMode = true;
+                                currentSearchWord = query;
+                                currentSearchPage = 1;
+                                String url = MyApplication.getContext().getResources().getString(R.string.base_url)
+                                        + "/search/searchdata?r=" + String.valueOf(Math.random());
+                                Log.v("URL", url);
+                                Tools.getSearchResult(url, query, currentSearchPage, SEARCH);
+                                Tools.updateSuggestions(query);
+
+                                searchView.setSuggestions(Tools.getSuggestions());
+                                return true;
+                            }
+
+                            @Override
+                            public boolean onQueryTextChange(String newText) {
+                                searchView.setSuggestions(Tools.getSuggestions());
+                                return false;
+                            }
+                        });
+
+                        searchView.setOnSearchViewListener(new MaterialSearchView.SearchViewListener() {
+                            @Override
+                            public void onSearchViewShown() {
+                                //Do some magic
+                            }
+
+                            @Override
+                            public void onSearchViewClosed() {
+
+                            }
+                        });
+                    }
+                });
+            }
+        }, 2, TimeUnit.SECONDS);
     }
 
     /**
@@ -312,7 +327,7 @@ public class MainActivity extends AppCompatActivity
      * @return
      */
     private static boolean writeToFile(List<Article> list) {
-        File file = new File(getDirectory(), "csdn.cache");
+        File file = new File(Tools.getDirectory(), "csdn.cache");
         ObjectOutputStream oos = null;
         try {
             if (!file.exists()) {
@@ -337,35 +352,6 @@ public class MainActivity extends AppCompatActivity
         return false;
     }
 
-    /**
-     * 获得缓存目录
-     **/
-    private static String getDirectory() {
-        String path = getSDPath() + "/" + CSDN_CACHE;
-        File file = new File(path);
-        if(!file.exists()){
-            file.mkdir();
-        }
-        return path;
-    }
-
-    /**
-     * 取SD卡路径
-     **/
-    private static String getSDPath() {
-        File sdDir = null;
-        boolean sdCardExist = Environment.getExternalStorageState().equals(
-                android.os.Environment.MEDIA_MOUNTED);  //判断sd卡是否存在
-        if (sdCardExist) {
-            sdDir = Environment.getExternalStorageDirectory();  //获取根目录
-        }
-        if (sdDir != null) {
-            return sdDir.toString();
-        } else {
-            return "";
-        }
-    }
-
     public class MyOnClickListener implements View.OnClickListener {
 
         @Override
@@ -373,7 +359,7 @@ public class MainActivity extends AppCompatActivity
             switch (v.getId()) {
                 case R.id.nav_imageView:
 
-//                    AlertDialog dialog = new AlertDialog.Builder(MyApplication.getContext())
+//                    AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
 //                            .setTitle("登录")
 //                            .setMessage("快来登录啊")
 //                            .setPositiveButton("确定", new DialogInterface.OnClickListener() {
@@ -404,9 +390,10 @@ public class MainActivity extends AppCompatActivity
                     List<Article> articleList = (List<Article>) msg.obj;
                     adapter.addItem(articleList);
                     swipeRefreshLayout.setRefreshing(false);
-                    if(isFirstOpen){
-                        isFirstOpen = false;
+                    if(currentUrl.equals(MyApplication.getContext().getResources().getString(R.string.base_url)
+                            + "/home/getlist?page=1")){
                         writeToFile(articleList);
+                        break;
                     }
                     Toast.makeText(MyApplication.getContext(),
                             "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();
@@ -432,6 +419,7 @@ public class MainActivity extends AppCompatActivity
                     articleList = (List<Article>) msg.obj;
                     adapter.addItem(articleList);
                     searchView.closeSearch();
+                    recyclerView.smoothScrollToPosition(0);
                     Toast.makeText(MyApplication.getContext(),
                             "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();
                     break;
@@ -439,6 +427,7 @@ public class MainActivity extends AppCompatActivity
                     swipeRefreshLayout.setRefreshing(false);
                     articleList = (List<Article>) msg.obj;
                     adapter.addMoreItem(articleList);
+                    recyclerView.smoothScrollToPosition(0);
                     Toast.makeText(MyApplication.getContext(),
                             "更新了" + articleList.size() + "条数据...", Toast.LENGTH_SHORT).show();
                     break;
@@ -484,7 +473,6 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
@@ -513,11 +501,6 @@ public class MainActivity extends AppCompatActivity
             toolbar.setTitle("系统运维");
             currentUrl = getResources().getString(R.string.base_url) + "/column/getlist?Channel=system&Type=new&page=1";
         }
-
-        //数据库
-        ///column/getlist?Channel=database&Type=new&page=1
-        //系统运维
-        ///column/getlist?Channel=system&Type=new&page=1
 
         recyclerView.smoothScrollToPosition(0);
         isSearchMode = false;

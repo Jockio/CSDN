@@ -59,7 +59,7 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
             ((NormalTextViewHolder) holder).readCountTextView.setText(article.getViewcount() + " 阅读");
 
             //开启线程下载图片
-            mImageLoader.addTask(article.getPhoto(), ((NormalTextViewHolder)holder).circleImageView);
+            mImageLoader.displayImage(article.getPhoto(), ((NormalTextViewHolder)holder).circleImageView);
             ((NormalTextViewHolder) holder).titleTextView.setOnClickListener(new MyOnClickListener(position));
             ((NormalTextViewHolder) holder).circleImageView.setOnClickListener(new MyOnClickListener(position));
         }
@@ -140,7 +140,6 @@ public class NormalRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
     //下拉刷新 添加数据
     public void addItem(List<Article> articleList) {
         this.articleList.clear();
-        //this.articleList.removeAll(this.articleList);
         this.articleList.addAll(articleList);
         notifyDataSetChanged();
     }

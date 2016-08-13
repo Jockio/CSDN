@@ -1,113 +1,55 @@
 package me.jockio.csdn.utils;
 
-import android.app.ActivityManager;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.LruCache;
-
-import java.lang.ref.SoftReference;
-import java.util.LinkedHashMap;
 
 /**
  * Created by zhangsj-fnst on 2016/7/5/0005.
  */
 public class ImageMemoryCache {
-    /**
-     * 从内存读取数据速度是最快的，为了更大限度使用内存，这里使用了两层缓存。
-     * 硬引用缓存不会轻易被回收，用来保存常用数据，不常用的转入软引用缓存。
-     */
-    private static final int SOFT_CACHE_SIZE = 15; //软引用缓存容量
-    private static LruCache<String, Bitmap> mLruCache; //硬引用缓存
-    private static LinkedHashMap<String, SoftReference<Bitmap>> mSoftCache; //软引用缓存
+    private LruCache<String, Bitmap> mMemoryCache;
 
-    public ImageMemoryCache(Context context){
-        int memoryClass = ((ActivityManager)
-                context.getSystemService(Context.ACTIVITY_SERVICE))
-                .getMemoryClass();
-        //硬引用缓存容量，为系统可用内存的1/4
-        int cacheSize = 1024 * 1024 * memoryClass /4;
-
-        mLruCache = new LruCache<String, Bitmap>(cacheSize){
+    public ImageMemoryCache(){
+        ////得到手机最大允许内存的1/8,即超过指定内存,则开始回收
+        long max = Runtime.getRuntime().maxMemory() / 8;
+        //传入允许的内存最大值,虚拟机默认内存16M,真机不一定相同
+        mMemoryCache = new LruCache<String, Bitmap>((int) max){
             @Override
             protected int sizeOf(String key, Bitmap value) {
-                if(value != null)
-                    return value.getRowBytes() * value.getHeight();
-                else
-                    return 0;
-            }
-
-            @Override
-            protected void entryRemoved(boolean evicted, String key, Bitmap oldValue, Bitmap newValue) {
-                if(oldValue != null){
-                    // 硬引用缓存容量满的时候，会根据LRU算法把最近没有被使用的图片转入此软引用缓存
-                    mSoftCache.put(key, new SoftReference<Bitmap>(oldValue));
-                }
-            }
-        };
-
-        mSoftCache = new LinkedHashMap<String, SoftReference<Bitmap>>(SOFT_CACHE_SIZE, 0.75f, true) {
-            private static final long serialVersionUID = 6040103833179403725L;
-            @Override
-            protected boolean removeEldestEntry(Entry<String, SoftReference<Bitmap>> eldest) {
-                if (size() > SOFT_CACHE_SIZE){
-                    return true;
-                }
-                return false;
+                int byteCount = value.getByteCount();
+                return byteCount;
             }
         };
     }
 
     /**
-     * 从缓存中获取图片
+     * 从内存中读图片
      * @param url
-     * @return
      */
-    public Bitmap getBitmapFromCache(String url){
-        Bitmap bitmap;
-
-        //先从硬盘中获取
-        synchronized (mLruCache){
-            bitmap = mLruCache.get(url);
-            if(bitmap != null){
-                //如果找到的话，就把元素移到LinkedHashMap的最前面，从而保证在LRU算法中是最后被删除
-                mLruCache.remove(url);
-                mLruCache.put(url, bitmap);
+    public Bitmap getBitmapFromMemory(String url) {
+        //1.强引用方法
+        Bitmap bitmap = mMemoryCache.get(url);
+        return bitmap;
+        /*2.弱引用方法
+            SoftReference<Bitmap> bitmapSoftReference = mMemoryCache.get(url);
+            if (bitmapSoftReference != null) {
+                Bitmap bitmap = bitmapSoftReference.get();
                 return bitmap;
             }
-        }
-
-        //如果硬引用缓存中找不到，到软引用缓存中找
-        synchronized (mSoftCache) {
-            SoftReference<Bitmap> bitmapReference = mSoftCache.get(url);
-            if (bitmapReference != null) {
-                bitmap = bitmapReference.get();
-                if (bitmap != null) {
-                    //将图片移回硬缓存
-                    mLruCache.put(url, bitmap);
-                    mSoftCache.remove(url);
-                    return bitmap;
-                } else {
-                    mSoftCache.remove(url);
-                }
-            }
-        }
-        return null;
+        */
     }
 
     /**
-     * 添加图片缓存
+     * 往内存中写图片
      * @param url
      * @param bitmap
      */
-    public void addBitmapToCache(String url, Bitmap bitmap) {
-        if (bitmap != null) {
-            synchronized (mLruCache) {
-                mLruCache.put(url, bitmap);
-            }
-        }
+    public void setBitmapToMemory(String url, Bitmap bitmap) {
+        //1.强引用方法
+        mMemoryCache.put(url,bitmap);
+        /*2.弱引用方法
+            mMemoryCache.put(url, new SoftReference<>(bitmap));
+        */
     }
 
-    public void clearCache() {
-        mSoftCache.clear();
-    }
 }

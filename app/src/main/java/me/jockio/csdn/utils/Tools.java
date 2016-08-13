@@ -1,5 +1,6 @@
 package me.jockio.csdn.utils;
 
+import android.os.Environment;
 import android.os.Message;
 import android.util.Log;
 
@@ -37,6 +38,7 @@ import static android.R.attr.id;
 
 public class Tools {
     private static List<Article> list = null;
+    private static final String CSDN_CACHE = "CSDN_Cache";
 
     /**
      * 根据url, 获取博客信息
@@ -175,7 +177,7 @@ public class Tools {
         }).start();
     }
 
-    public static void getDetail(String articleId){
+    private static void getDetail(String articleId){
         //这里的id是articleId
         String path = "http://m.blog.csdn.net/article/getdetails?id=" + articleId;
         OkHttpClient okHttpClient = new OkHttpClient();
@@ -222,7 +224,7 @@ public class Tools {
      * @return
      */
     public static String[] getSuggestions(){
-        File file = new File(MyApplication.getContext().getFilesDir(), "suggestion.sg");
+        File file = new File(getDirectory(), "suggestion.sg");
 
         BufferedReader br = null;
         try {
@@ -290,7 +292,7 @@ public class Tools {
      * @return
      */
     public static boolean updateSuggestions(String keyword){
-        File file = new File(MyApplication.getContext().getFilesDir(), "suggestion.sg");
+        File file = new File(getDirectory(), "suggestion.sg");
 
         BufferedReader br = null;
         try {
@@ -358,5 +360,34 @@ public class Tools {
             }
         }
         return false;
+    }
+
+    /**
+     * 获得缓存目录
+     **/
+    public static String getDirectory() {
+        String path = getSDPath() + "/" + CSDN_CACHE;
+        File file = new File(path);
+        if(!file.exists()){
+            file.mkdir();
+        }
+        return path;
+    }
+
+    /**
+     * 取SD卡路径
+     **/
+    private static String getSDPath() {
+        File sdDir = null;
+        boolean sdCardExist = Environment.getExternalStorageState().equals(
+                android.os.Environment.MEDIA_MOUNTED);  //判断sd卡是否存在
+        if (sdCardExist) {
+            sdDir = Environment.getExternalStorageDirectory();  //获取根目录
+        }
+        if (sdDir != null) {
+            return sdDir.toString();
+        } else {
+            return MyApplication.getContext().getFilesDir().getPath();
+        }
     }
 }
