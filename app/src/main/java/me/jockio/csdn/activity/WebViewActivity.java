@@ -99,4 +99,17 @@ public class WebViewActivity extends AppCompatActivity {
             }
         });
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(webView != null) {
+            webView.clearHistory();
+            webView.clearCache(true);
+            webView.loadUrl("about:blank");
+            webView.pauseTimers();
+            // Note that webView.destroy() and mWebView = null do the exact same thing
+            webView = null;
+        }
+    }
 }
