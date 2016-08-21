@@ -41,10 +41,13 @@
         <TextView
             android:id="@+id/author_textView"
             style="@style/article_info"
+            android:layout_width="80dp"
             android:layout_toRightOf="@id/imageView"
             android:layout_toEndOf="@id/imageView"
             android:layout_marginLeft="3dp"
-            android:text="@string/article_author"/>
+            android:ellipsize = "end"
+            android:text="@string/article_author"
+            android:maxLines="1" />
 
         <TextView
             android:id="@+id/readCount_textView"
